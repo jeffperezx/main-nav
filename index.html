@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpine – Main nav prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&family=Inter:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --rail:#062D13; --rail-hover:#0A431D; --tile:#E9FCEF; --tile-fg:#0D5926; --brand:#127D35;
+    --rail-icon:#A6A6A6; --rail-text:#A6A6A6; --divider:rgba(166,166,166,.35);
+    --btn:#127D35; --btn-hover:#0D5926;
+    --text:#1F2328; --text-2:#5B616B; --text-3:#8A9099; --border:#EDEDED; --input-border:#E1E1E1; --ctrl-bg:#EDEDED; --ctrl-hover:#E2E2E2; --bg:#F6F7F8; --surface:#FFFFFF;
+    --focus:#2E7D4F; --radius:4px; --card-radius:8px; --rail-w:115px; --top-h:73px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{font-family:Roboto,system-ui,sans-serif;color:var(--text);background:var(--bg);font-size:14px;-webkit-font-smoothing:antialiased}
+  button{font:inherit;color:inherit}
+  svg.i{width:20px;height:20px;fill:currentColor;flex:none}
+  :focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+  .app{display:grid;grid-template-columns:var(--rail-w) 1fr;grid-template-rows:var(--top-h) 1fr;height:100vh}
+
+  /* Rail */
+  .rail{grid-row:1 / span 2;background:var(--rail);display:flex;flex-direction:column;align-items:center;padding:16px 16px;overflow-y:auto;overflow-x:visible;scrollbar-width:thin}
+  .logo{width:48px;height:49px;margin:0 0 28px;flex:none;fill:#fff}
+  .rail-group{display:flex;flex-direction:column;align-items:center;gap:4px;width:100%}
+  .rail-divider{width:80px;height:1px;background:var(--divider);margin:16px 0;flex:none}
+  .rail-spacer{flex:1 1 auto;min-height:12px}
+  .rail-item{position:relative;display:flex;flex-direction:column;align-items:center;gap:4px;width:83px;padding:8px;border:0;background:transparent;border-radius:4px;cursor:pointer;color:var(--rail-text);text-decoration:none}
+  .rail-item svg.i{width:24px;height:24px;color:var(--rail-icon)}
+  .rail-item .lbl{font-size:12px;font-weight:500;line-height:18px;text-align:center;white-space:nowrap}
+  .rail-item:hover{background:var(--rail-hover)}
+  .rail-item[aria-current="page"]{background:var(--tile);color:var(--tile-fg)}
+  .rail-item[aria-current="page"] svg.i{color:var(--tile-fg)}
+  .rail-item[aria-current="page"] .lbl{font-weight:600}
+  .badge{position:absolute;top:2px;left:58px;min-width:23px;height:22px;padding:0 7px;border-radius:9999px;background:#ECF9F0;border:1px solid #C5EDD3;color:#0D5926;font-size:12px;font-weight:500;line-height:20px;text-align:center}
+  
+  .tip{position:fixed;z-index:60;background:#1F2328;color:#fff;font-size:12px;padding:6px 8px;border-radius:6px;pointer-events:none;white-space:nowrap;box-shadow:0 4px 12px rgba(0,0,0,.2)}
+
+  /* Top bar */
+  .top{grid-column:2;display:flex;align-items:center;gap:16px;padding:16px 24px 16px 20px;background:var(--surface);border-bottom:1px solid var(--border);position:relative;z-index:20}
+  .search{display:flex;align-items:center;gap:8px;width:min(480px,40vw);height:40px;padding:0 12px;border:1px solid var(--input-border);border-radius:var(--radius);background:#fff;color:var(--text-3)}
+  .search:focus-within{border-color:var(--brand);box-shadow:0 0 0 3px rgba(18,125,53,.12)}
+  .search input{border:0;outline:0;flex:1;font:inherit;color:var(--text);background:transparent;min-width:0}
+  .kbd{font-size:11px;color:var(--text-3);border:1px solid var(--border);border-radius:4px;padding:1px 5px}
+  .grow{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 16px;border-radius:var(--radius);border:1px solid transparent;cursor:pointer;font-weight:500;background:#fff}
+  .btn svg.i{width:18px;height:18px}
+  .btn-primary{background:var(--btn);color:#fff}
+  .btn-primary:hover{background:var(--btn-hover)}
+  .btn-secondary{background:var(--ctrl-bg);color:var(--text)}
+  .btn-secondary:hover{background:var(--ctrl-hover)}
+  .icon-btn{width:38px;height:38px;padding:0;justify-content:center;background:var(--ctrl-bg)}
+  .icon-btn:hover{background:var(--ctrl-hover)}
+  .avatar-btn{width:40px;height:40px;border-radius:50%;border:0;padding:0;cursor:pointer;background:#2F6B45;color:#fff;font-weight:600;font-size:14px}
+  .wrap{position:relative}
+
+  /* Menus — Dropdown List + _List Items (Alpine Component Library) */
+  .menu{position:absolute;top:calc(100% + 6px);right:0;min-width:240px;background:#fff;border-radius:4px;box-shadow:0 1px 3px rgba(16,24,40,.10),0 1px 2px -1px rgba(16,24,40,.10),0 0 0 1px rgba(16,24,40,.04);padding:4px 0;z-index:50;display:none;overflow:hidden}
+  .menu.open{display:block}
+  .menu.left{left:calc(100% + 8px);right:auto;top:auto;bottom:0;position:fixed}
+  .mi{display:flex;align-items:flex-start;gap:8px;width:100%;padding:12px 16px;border:0;background:#fff;border-radius:0;text-align:left;cursor:pointer;transition:background-color .12s}
+  .mi:hover,.mi:focus-visible{background:#E9FCEF;outline:none}
+  .mi svg.i{width:16px;height:16px;margin-top:2px;color:#595959}
+  .mi .t{display:block;font-size:14px;line-height:20px;font-weight:400;color:#262626}
+  .mi .s{display:block;font-size:12px;line-height:16px;color:#595959;margin-top:2px}
+  .mi[aria-checked="true"] .t{font-weight:500}
+  .mi .check{margin-left:auto;color:var(--brand)}
+  .msep{height:1px;background:#E1E1E1;margin:0}
+  .mhead{padding:12px 16px;background:#FAFAFA}
+  .mhead b{display:block;font-size:14px;font-weight:600;color:#262626}
+  .mhead span{font-size:12px;color:#595959}
+  .mlabel{font-size:12px;font-weight:600;color:#595959;background:#FAFAFA;padding:12px 16px}
+  /* Content */
+  main{grid-column:2;overflow:auto;padding:20px 20px 120px}
+  main.shot-page{padding:0;background:#F5F5F5}
+  img.shot{display:block;width:100%;max-width:1325px;height:auto}
+  .shot-tag{position:sticky;top:0;z-index:2;display:none}
+  h1{font-size:24px;line-height:32px;font-weight:600;margin:0 0 4px}
+  .sub{color:var(--text-2);margin:0 0 20px}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--card-radius)}
+  table{width:100%;border-collapse:collapse}
+  th{font-size:12px;font-weight:500;letter-spacing:.4px;text-transform:uppercase;color:var(--text-3);text-align:left;padding:12px 16px;border-bottom:1px solid var(--border)}
+  td{padding:14px 16px;border-bottom:1px solid var(--border);color:var(--text-2)}
+  td:first-child{color:var(--text);font-weight:500}
+  tr:last-child td{border-bottom:0}
+  .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:16px}
+  .stat{padding:18px 20px}
+  .stat b{display:block;font-size:26px;font-weight:600}
+  .stat span{color:var(--text-2)}
+  .placeholder{padding:48px;text-align:center;color:var(--text-2)}
+  .placeholder svg.i{width:32px;height:32px;color:var(--text-3);margin-bottom:8px}
+  .note{display:inline-flex;gap:8px;align-items:flex-start;background:#EEF7F1;color:var(--tile-fg);border-radius:6px;padding:10px 12px;margin-bottom:16px;font-size:13px}
+  .note svg.i{width:16px;height:16px;margin-top:1px}
+  main.settings-page{padding:0;background:#F5F5F5}
+  .settings{display:grid;grid-template-columns:161px 1fr;min-height:100%}
+  .snav2{background:#FAFAFA;padding-top:40px;display:flex;flex-direction:column;gap:4px}
+  .snav2 button{position:relative;height:77px;border:0;background:transparent;cursor:pointer;display:flex;flex-direction:column;align-items:flex-end;justify-content:center;gap:8px;padding:0 16px 0 8px;font-family:Inter,Roboto,sans-serif;font-weight:500;font-size:12px;line-height:18px;text-transform:uppercase;color:#595959;text-align:right}
+  .snav2 button svg.i{width:16px;height:16px;color:#595959}
+  .snav2 button:hover{color:#262626}
+  .snav2 button[aria-current="page"]{color:#262626}
+  .snav2 button[aria-current="page"] svg.i{color:#404040}
+  .snav2 button[aria-current="page"]::after{content:"";position:absolute;right:6.5px;top:12px;height:53px;width:3px;background:#148D3C;border-radius:2px}
+  .snav2 .moved{font-size:9px;line-height:14px;letter-spacing:.4px;color:#148D3C;background:#E9FCEF;border-radius:3px;padding:0 4px;margin-right:6px}
+  .snav2 .ic-row{display:flex;align-items:center}
+  .settings-body{min-width:0}
+  .settings-body .note{margin:16px 16px 0}
+  .snav{padding:8px}
+  .snav button{display:flex;align-items:center;gap:10px;width:100%;padding:10px 12px;border:0;background:transparent;border-radius:6px;cursor:pointer;text-align:left;color:var(--text-2)}
+  .snav button svg.i{width:16px;height:16px}
+  .snav button:hover{background:#F3F6F4}
+  .snav button[aria-current="page"]{background:var(--tile);color:var(--tile-fg);font-weight:600}
+  .snav .tag{margin-left:auto;font-size:10px;font-weight:600;color:var(--brand);background:#EEF7F1;border-radius:4px;padding:1px 5px}
+
+  /* Modal + toast */
+  .scrim{position:fixed;inset:0;background:rgba(16,24,40,.45);display:none;align-items:center;justify-content:center;z-index:80}
+  .scrim.open{display:flex}
+  .modal{width:min(520px,92vw);background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 20px 50px rgba(0,0,0,.25)}
+  .modal header{background:var(--btn);color:#fff;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;font-weight:600}
+  .modal header button{background:transparent;border:0;color:#fff;cursor:pointer;padding:4px}
+  .modal .body{padding:20px 18px;color:var(--text-2);line-height:1.5}
+  .modal footer{padding:12px 18px;display:flex;justify-content:flex-end;border-top:1px solid var(--border)}
+  .toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#1F2328;color:#fff;padding:10px 14px;border-radius:8px;font-size:13px;z-index:90;opacity:0;transition:opacity .2s;pointer-events:none}
+  .toast.show{opacity:1}
+
+  /* Prototype controls */
+  .ctl{position:fixed;right:16px;bottom:16px;width:300px;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 30px rgba(16,24,40,.18);z-index:70;font-size:13px}
+  .ctl header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--border);font-weight:600;cursor:pointer;user-select:none}
+  .ctl header svg.i{width:16px;height:16px;color:var(--brand)}
+  .ctl header .chev{margin-left:auto;transition:transform .2s}
+  .ctl.collapsed header{border-bottom:0}
+  .ctl.collapsed .chev{transform:rotate(180deg)}
+  .ctl.collapsed .ctl-body{display:none}
+  .ctl-body{padding:10px 12px 12px;max-height:60vh;overflow:auto}
+  .ctl label{display:flex;align-items:center;gap:8px;padding:3px 0;cursor:pointer}
+  .ctl .grp{font-size:11px;font-weight:600;letter-spacing:.6px;text-transform:uppercase;color:var(--text-3);margin:10px 0 4px}
+  .ctl .grp:first-child{margin-top:0}
+  .diff{margin:6px 0 0;padding-left:18px;color:var(--text-2)}
+  .diff li{margin:3px 0}
+  @media (max-height:820px){ .rail-item{padding:5px 8px} .logo{width:40px;height:41px;margin:0 0 16px} .rail-divider{margin:8px 0} .rail-group{gap:2px} }
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Main">
+    <svg class="logo" viewBox="0 0 48 49" role="img" aria-label="Humanitru"><path d="M24.9651 1.28769C25.5017 1.32602 27.3175 2.16418 28.3327 2.67077C29.705 3.35551 31.0593 4.07631 32.4211 4.78194C34.6161 5.9193 36.8111 7.05669 39.0059 8.19449C40.4015 8.91796 41.7993 9.63717 43.191 10.368C43.9988 10.7922 44.8065 11.2162 45.4204 11.926C46.2149 12.8447 46.7352 13.872 46.7357 15.1124C46.7379 21.1038 46.7423 27.0952 46.7313 33.0866C46.7294 34.1217 46.2972 35.0141 45.6915 35.8398C45.0202 36.7547 44.0528 37.254 43.0871 37.7556C41.1402 38.7668 39.1845 39.7611 37.2341 40.7658C35.8029 41.503 34.3741 42.2451 32.9448 42.9862C30.9304 44.0305 28.9247 45.0923 26.8969 46.1099C26.3506 46.3841 25.5646 46.5602 24.9651 46.785C24.1778 46.8109 23.8292 46.8115 23.0102 46.785C22.479 46.5799 21.7312 46.4097 21.2698 46.1906C20.3885 45.7721 19.5276 45.3103 18.6605 44.8621C17.3208 44.1694 15.9834 43.4723 14.6443 42.7783C12.4386 41.635 10.2324 40.4929 8.02644 39.35C6.67608 38.6504 5.31662 37.9676 3.97846 37.2454C2.759 36.5873 1.27697 35.1328 1.27697 33.9829C1.27697 32.833 1.24265 20.7118 1.27697 14.1665C1.28501 12.6333 2.65093 11.5887 3.86501 10.8993C5.47146 9.98725 7.12899 9.16484 8.76775 8.31C10.1824 7.5721 11.6003 6.84064 13.0188 6.11013C14.9107 5.13579 16.8047 4.16547 18.6972 3.19227C18.8657 3.10563 19.0267 3.00411 19.1965 2.92037C20.0595 2.49481 20.9047 2.0242 21.7954 1.66731C22.3555 1.44292 22.4892 1.32602 23.1366 1.2616C23.5042 1.2616 24.2948 1.2616 24.6584 1.2616C24.7905 1.26568 24.8002 1.26557 24.9651 1.28769ZM5.49268 34.715C5.79893 34.8923 6.09878 35.0819 6.41245 35.2448C8.63982 36.4021 10.8702 37.5536 13.0993 38.7076C14.4162 39.3894 15.7313 40.0747 17.0493 40.7543C18.9541 41.7364 20.8577 42.7208 22.7684 43.691C23.3523 43.9875 24.004 44.0899 24.6137 43.8725C25.3585 43.607 26.069 43.2374 26.7774 42.8793C28.2027 42.1589 29.6169 41.4163 31.0352 40.682C33.1741 39.5746 35.3119 38.4653 37.4515 37.3592C39.062 36.5267 40.6818 35.712 42.2829 34.8618C43.1282 34.4129 43.5943 33.696 43.5941 32.7104C43.5931 26.8982 43.5928 21.086 43.5949 15.2738C43.5951 14.6846 43.4225 14.1454 42.9639 13.7867C42.4205 13.3616 41.8365 12.9735 41.227 12.6505C39.0766 11.5108 36.9073 10.4069 34.7462 9.2875C33.3504 8.56457 31.9575 7.83594 30.5611 7.11432C28.8828 6.24707 27.1977 5.39311 25.5242 4.51682C24.5046 3.98294 23.5055 3.9509 22.4892 4.51726C21.9138 4.83792 21.3227 5.13038 20.7377 5.43378C19.3649 6.14576 17.9919 6.8573 16.6184 7.56787C14.4004 8.71538 12.1815 9.8614 9.96357 11.0091C8.52246 11.7549 7.07067 12.4812 5.64643 13.2579C4.86718 13.6829 4.41625 14.3524 4.41717 15.2891C4.42289 21.114 4.42288 26.939 4.41688 32.764C4.41602 33.5996 4.7901 34.2117 5.49268 34.715Z"/><path d="M20.1882 12.3388C20.7788 12.0766 21.0554 12.2583 21.0554 12.8774C21.0556 15.1509 21.0555 17.4244 21.0555 19.6978C21.0555 19.8377 21.0555 19.9776 21.0555 20.165C21.206 20.1719 21.3402 20.1833 21.4744 20.1834C23.0454 20.1846 24.6164 20.179 26.1874 20.1869C26.747 20.1897 26.9262 20.1941 26.9531 19.4034C26.9778 18.6762 26.9583 17.9475 26.9583 17.2195C26.9583 15.7379 26.9571 14.2563 26.959 12.7747C26.9597 12.2784 27.2504 12.0819 27.7067 12.2849C29.0356 12.8761 30.3605 13.4763 31.6861 14.0749C32.516 14.4496 33.3417 14.834 34.1752 15.2008C34.4587 15.3257 34.5556 15.5043 34.555 15.82C34.5449 21.2866 34.5449 26.7531 34.5546 32.2197C34.5552 32.5615 34.4448 32.7561 34.1356 32.8939C32.2874 33.7176 30.4445 34.553 28.6002 35.3852C28.3003 35.5205 28.0095 35.6801 27.7012 35.7917C27.1906 35.9767 26.9586 35.8031 26.9585 35.2671C26.9581 32.9553 26.9583 30.6436 26.9583 28.3318C26.9583 28.1924 26.9583 28.0529 26.9583 27.8689C26.8039 27.862 26.6693 27.851 26.5348 27.8509C24.9638 27.8497 23.3927 27.8496 21.8217 27.8504C21.2451 27.8506 21.0558 28.0449 21.0556 28.6344C21.0552 30.8312 21.056 33.0281 21.0551 35.2249C21.0549 35.7717 20.7496 35.9778 20.2399 35.7521C19.1295 35.2605 18.0241 34.7577 16.9199 34.2525C15.9072 33.7893 14.9032 33.3069 13.8857 32.8545C13.5747 32.7162 13.4578 32.5373 13.4585 32.1895C13.4693 26.7358 13.4691 21.282 13.4591 15.8282C13.4584 15.4754 13.5877 15.3234 13.9057 15.1876C14.9409 14.7453 15.9563 14.2569 16.9813 13.7906C18.0402 13.3089 19.1015 12.8322 20.1882 12.3388Z"/></svg>
+    <div class="rail-group" id="g-core"></div>
+    <div class="rail-divider" id="d-paid"></div>
+    <div class="rail-group" id="g-paid"></div>
+    <div class="rail-spacer"></div>
+    <div class="rail-group" id="g-bottom"></div>
+  </nav>
+
+  <header class="top">
+    <label class="search"><span id="ic-search"></span><span class="sr">Search</span>
+      <input id="search" placeholder="Search constituents, actions, campaigns…" autocomplete="off">
+      <span class="kbd" id="kbd">⌘K</span></label>
+    <div class="grow"></div>
+    <div class="wrap" id="w-new"></div>
+    <div class="wrap" id="w-switch"></div>
+    <button class="btn icon-btn" id="help" aria-label="Help Center (opens in a new tab)"></button>
+    <div class="wrap" id="w-profile"></div>
+  </header>
+
+  <main id="main" tabindex="-1"></main>
+</div>
+
+<div class="scrim" id="scrim" role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="modal"><header><span id="m-title"></span><button id="m-x" aria-label="Close"></button></header>
+    <div class="body" id="m-body"></div>
+    <footer><button class="btn btn-secondary" id="m-close">Close</button></footer></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<aside class="ctl collapsed" id="ctl" aria-label="Prototype controls">
+  <header id="ctl-h" role="button" tabindex="0" aria-expanded="false"><span id="ic-sl"></span>Prototype controls<span class="chev" id="ic-chev"></span></header>
+  <div class="ctl-body">
+    <div class="grp">Signed in as</div>
+    <div id="roles"></div>
+    <div class="grp">Organization plan</div>
+    <label><input type="checkbox" id="paid" checked> Paid features (Pipelines, Insights, Stewardship)</label>
+    <div class="grp">This user's features (Staff Members › Features)</div>
+    <label><input type="checkbox" id="f-ins" checked> Donor Insights</label>
+    <label><input type="checkbox" id="f-stew" checked> Stewardship Automation</label>
+    <div class="grp">What's different from today</div>
+    <ul class="diff" id="diff"></ul>
+  </div>
+</aside>
+
+<script>
+const ICONS = {"speedometer2": "<path d=\"M8 4a.5.5 0 0 1 .5.5V6a.5.5 0 0 1-1 0V4.5A.5.5 0 0 1 8 4M3.732 5.732a.5.5 0 0 1 .707 0l.915.914a.5.5 0 1 1-.708.708l-.914-.915a.5.5 0 0 1 0-.707M2 10a.5.5 0 0 1 .5-.5h1.586a.5.5 0 0 1 0 1H2.5A.5.5 0 0 1 2 10m9.5 0a.5.5 0 0 1 .5-.5h1.5a.5.5 0 0 1 0 1H12a.5.5 0 0 1-.5-.5m.754-4.246a.39.39 0 0 0-.527-.02L7.547 9.31a.91.91 0 1 0 1.302 1.258l3.434-4.297a.39.39 0 0 0-.029-.518z\"/>\n  <path fill-rule=\"evenodd\" d=\"M0 10a8 8 0 1 1 15.547 2.661c-.442 1.253-1.845 1.602-2.932 1.25C11.309 13.488 9.475 13 8 13c-1.474 0-3.31.488-4.615.911-1.087.352-2.49.003-2.932-1.25A8 8 0 0 1 0 10m8-7a7 7 0 0 0-6.603 9.329c.203.575.923.876 1.68.63C4.397 12.533 6.358 12 8 12s3.604.532 4.923.96c.757.245 1.477-.056 1.68-.631A7 7 0 0 0 8 3\"/>", "people": "<path d=\"M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4\"/>", "star": "<path d=\"M2.866 14.85c-.078.444.36.791.746.593l4.39-2.256 4.389 2.256c.386.198.824-.149.746-.592l-.83-4.73 3.522-3.356c.33-.314.16-.888-.282-.95l-4.898-.696L8.465.792a.513.513 0 0 0-.927 0L5.354 5.12l-4.898.696c-.441.062-.612.636-.283.95l3.523 3.356-.83 4.73zm4.905-2.767-3.686 1.894.694-3.957a.56.56 0 0 0-.163-.505L1.71 6.745l4.052-.576a.53.53 0 0 0 .393-.288L8 2.223l1.847 3.658a.53.53 0 0 0 .393.288l4.052.575-2.906 2.77a.56.56 0 0 0-.163.506l.694 3.957-3.686-1.894a.5.5 0 0 0-.461 0z\"/>", "tags": "<path d=\"M3 2v4.586l7 7L14.586 9l-7-7zM2 2a1 1 0 0 1 1-1h4.586a1 1 0 0 1 .707.293l7 7a1 1 0 0 1 0 1.414l-4.586 4.586a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 2 6.586z\"/>\n  <path d=\"M5.5 5a.5.5 0 1 1 0-1 .5.5 0 0 1 0 1m0 1a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3M1 7.086a1 1 0 0 0 .293.707L8.75 15.25l-.043.043a1 1 0 0 1-1.414 0l-7-7A1 1 0 0 1 0 7.586V3a1 1 0 0 1 1-1z\"/>", "gift": "<path d=\"M3 2.5a2.5 2.5 0 0 1 5 0 2.5 2.5 0 0 1 5 0v.006c0 .07 0 .27-.038.494H15a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1v7.5a1.5 1.5 0 0 1-1.5 1.5h-11A1.5 1.5 0 0 1 1 14.5V7a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h2.038A3 3 0 0 1 3 2.506zm1.068.5H7v-.5a1.5 1.5 0 1 0-3 0c0 .085.002.274.045.43zM9 3h2.932l.023-.07c.043-.156.045-.345.045-.43a1.5 1.5 0 0 0-3 0zM1 4v2h6V4zm8 0v2h6V4zm5 3H9v8h4.5a.5.5 0 0 0 .5-.5zm-7 8V7H2v7.5a.5.5 0 0 0 .5.5z\"/>", "bullseye": "<path d=\"M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16\"/>\n  <path d=\"M8 13A5 5 0 1 1 8 3a5 5 0 0 1 0 10m0 1A6 6 0 1 0 8 2a6 6 0 0 0 0 12\"/>\n  <path d=\"M8 11a3 3 0 1 1 0-6 3 3 0 0 1 0 6m0 1a4 4 0 1 0 0-8 4 4 0 0 0 0 8\"/>\n  <path d=\"M9.5 8a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0\"/>", "heart": "<path d=\"m8 2.748-.717-.737C5.6.281 2.514.878 1.4 3.053c-.523 1.023-.641 2.5.314 4.385.92 1.815 2.834 3.989 6.286 6.357 3.452-2.368 5.365-4.542 6.286-6.357.955-1.886.838-3.362.314-4.385C13.486.878 10.4.28 8.717 2.01zM8 15C-7.333 4.868 3.279-3.04 7.824 1.143q.09.083.176.171a3 3 0 0 1 .176-.17C12.72-3.042 23.333 4.867 8 15\"/>", "lightbulb": "<path d=\"M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a2 2 0 0 0-.453-.618A5.98 5.98 0 0 1 2 6m6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1\"/>", "gear": "<path d=\"M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0\"/>\n  <path d=\"M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z\"/>", "search": "<path d=\"M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001q.044.06.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1 1 0 0 0-.115-.1zM12 6.5a5.5 5.5 0 1 1-11 0 5.5 5.5 0 0 1 11 0\"/>", "plus-lg": "<path fill-rule=\"evenodd\" d=\"M8 2a.5.5 0 0 1 .5.5v5h5a.5.5 0 0 1 0 1h-5v5a.5.5 0 0 1-1 0v-5h-5a.5.5 0 0 1 0-1h5v-5A.5.5 0 0 1 8 2\"/>", "chevron-down": "<path fill-rule=\"evenodd\" d=\"M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708\"/>", "question-circle": "<path d=\"M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16\"/>\n  <path d=\"M5.255 5.786a.237.237 0 0 0 .241.247h.825c.138 0 .248-.113.266-.25.09-.656.54-1.134 1.342-1.134.686 0 1.314.343 1.314 1.168 0 .635-.374.927-.965 1.371-.673.489-1.206 1.06-1.168 1.987l.003.217a.25.25 0 0 0 .25.246h.811a.25.25 0 0 0 .25-.25v-.105c0-.718.273-.927 1.01-1.486.609-.463 1.244-.977 1.244-2.056 0-1.511-1.276-2.241-2.673-2.241-1.267 0-2.655.59-2.75 2.286m1.557 5.763c0 .533.425.927 1.01.927.609 0 1.028-.394 1.028-.927 0-.552-.42-.94-1.029-.94-.584 0-1.009.388-1.009.94\"/>", "person-add": "<path d=\"M12.5 16a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7m.5-5v1h1a.5.5 0 0 1 0 1h-1v1a.5.5 0 0 1-1 0v-1h-1a.5.5 0 0 1 0-1h1v-1a.5.5 0 0 1 1 0m-2-6a3 3 0 1 1-6 0 3 3 0 0 1 6 0M8 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4\"/>\n  <path d=\"M8.256 14a4.5 4.5 0 0 1-.229-1.004H3c.001-.246.154-.986.832-1.664C4.484 10.68 5.711 10 8 10q.39 0 .74.025c.226-.341.496-.65.804-.918Q8.844 9.002 8 9c-5 0-6 3-6 4s1 1 1 1z\"/>", "list-check": "<path fill-rule=\"evenodd\" d=\"M5 11.5a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5m0-4a.5.5 0 0 1 .5-.5h9a.5.5 0 0 1 0 1h-9a.5.5 0 0 1-.5-.5M3.854 2.146a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 3.293l1.146-1.147a.5.5 0 0 1 .708 0m0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 1 1 .708-.708L2 7.293l1.146-1.147a.5.5 0 0 1 .708 0m0 4a.5.5 0 0 1 0 .708l-1.5 1.5a.5.5 0 0 1-.708 0l-.5-.5a.5.5 0 0 1 .708-.708l.146.147 1.146-1.147a.5.5 0 0 1 .708 0\"/>", "upload": "<path d=\"M.5 9.9a.5.5 0 0 1 .5.5v2.5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-2.5a.5.5 0 0 1 1 0v2.5a2 2 0 0 1-2 2H2a2 2 0 0 1-2-2v-2.5a.5.5 0 0 1 .5-.5\"/>\n  <path d=\"M7.646 1.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1-.708.708L8.5 2.707V11.5a.5.5 0 0 1-1 0V2.707L5.354 4.854a.5.5 0 1 1-.708-.708z\"/>", "clipboard": "<path d=\"M4 1.5H3a2 2 0 0 0-2 2V14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V3.5a2 2 0 0 0-2-2h-1v1h1a1 1 0 0 1 1 1V14a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3.5a1 1 0 0 1 1-1h1z\"/>\n  <path d=\"M9.5 1a.5.5 0 0 1 .5.5v1a.5.5 0 0 1-.5.5h-3a.5.5 0 0 1-.5-.5v-1a.5.5 0 0 1 .5-.5zm-3-1A1.5 1.5 0 0 0 5 1.5v1A1.5 1.5 0 0 0 6.5 4h3A1.5 1.5 0 0 0 11 2.5v-1A1.5 1.5 0 0 0 9.5 0z\"/>", "box-arrow-up-right": "<path fill-rule=\"evenodd\" d=\"M8.636 3.5a.5.5 0 0 0-.5-.5H1.5A1.5 1.5 0 0 0 0 4.5v10A1.5 1.5 0 0 0 1.5 16h10a1.5 1.5 0 0 0 1.5-1.5V7.864a.5.5 0 0 0-1 0V14.5a.5.5 0 0 1-.5.5h-10a.5.5 0 0 1-.5-.5v-10a.5.5 0 0 1 .5-.5h6.636a.5.5 0 0 0 .5-.5\"/>\n  <path fill-rule=\"evenodd\" d=\"M16 .5a.5.5 0 0 0-.5-.5h-5a.5.5 0 0 0 0 1h3.793L6.146 9.146a.5.5 0 1 0 .708.708L15 1.707V5.5a.5.5 0 0 0 1 0z\"/>", "check-lg": "<path d=\"M12.736 3.97a.733.733 0 0 1 1.047 0c.286.289.29.756.01 1.05L7.88 12.01a.733.733 0 0 1-1.065.02L3.217 8.384a.757.757 0 0 1 0-1.06.733.733 0 0 1 1.047 0l3.052 3.093 5.4-6.425z\"/>", "person": "<path d=\"M8 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6m2-3a2 2 0 1 1-4 0 2 2 0 0 1 4 0m4 8c0 1-1 1-1 1H3s-1 0-1-1 1-4 6-4 6 3 6 4m-1-.004c-.001-.246-.154-.986-.832-1.664C11.516 10.68 10.289 10 8 10s-3.516.68-4.168 1.332c-.678.678-.83 1.418-.832 1.664z\"/>", "box-arrow-right": "<path fill-rule=\"evenodd\" d=\"M10 12.5a.5.5 0 0 1-.5.5h-8a.5.5 0 0 1-.5-.5v-9a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 .5.5v2a.5.5 0 0 0 1 0v-2A1.5 1.5 0 0 0 9.5 2h-8A1.5 1.5 0 0 0 0 3.5v9A1.5 1.5 0 0 0 1.5 14h8a1.5 1.5 0 0 0 1.5-1.5v-2a.5.5 0 0 0-1 0z\"/>\n  <path fill-rule=\"evenodd\" d=\"M15.854 8.354a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L14.293 7.5H5.5a.5.5 0 0 0 0 1h8.793l-2.147 2.146a.5.5 0 0 0 .708.708z\"/>", "tools": "<path d=\"M1 0 0 1l2.2 3.081a1 1 0 0 0 .815.419h.07a1 1 0 0 1 .708.293l2.675 2.675-2.617 2.654A3.003 3.003 0 0 0 0 13a3 3 0 1 0 5.878-.851l2.654-2.617.968.968-.305.914a1 1 0 0 0 .242 1.023l3.27 3.27a.997.997 0 0 0 1.414 0l1.586-1.586a.997.997 0 0 0 0-1.414l-3.27-3.27a1 1 0 0 0-1.023-.242L10.5 9.5l-.96-.96 2.68-2.643A3.005 3.005 0 0 0 16 3q0-.405-.102-.777l-2.14 2.141L12 4l-.364-1.757L13.777.102a3 3 0 0 0-3.675 3.68L7.462 6.46 4.793 3.793a1 1 0 0 1-.293-.707v-.071a1 1 0 0 0-.419-.814zm9.646 10.646a.5.5 0 0 1 .708 0l2.914 2.915a.5.5 0 0 1-.707.707l-2.915-2.914a.5.5 0 0 1 0-.708M3 11l.471.242.529.026.287.445.445.287.026.529L5 13l-.242.471-.026.529-.445.287-.287.445-.529.026L3 15l-.471-.242L2 14.732l-.287-.445L1.268 14l-.026-.529L1 13l.242-.471.026-.529.445-.287.287-.445.529-.026z\"/>", "x-lg": "<path d=\"M2.146 2.854a.5.5 0 1 1 .708-.708L8 7.293l5.146-5.147a.5.5 0 0 1 .708.708L8.707 8l5.147 5.146a.5.5 0 0 1-.708.708L8 8.707l-5.146 5.147a.5.5 0 0 1-.708-.708L7.293 8z\"/>", "info-circle": "<path d=\"M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16\"/>\n  <path d=\"m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0\"/>", "sliders": "<path fill-rule=\"evenodd\" d=\"M11.5 2a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M9.05 3a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0V3zM4.5 7a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3M2.05 8a2.5 2.5 0 0 1 4.9 0H16v1H6.95a2.5 2.5 0 0 1-4.9 0H0V8zm9.45 4a1.5 1.5 0 1 0 0 3 1.5 1.5 0 0 0 0-3m-2.45 1a2.5 2.5 0 0 1 4.9 0H16v1h-2.05a2.5 2.5 0 0 1-4.9 0H0v-1z\"/>", "file-earmark-text": "<path d=\"M5.5 7a.5.5 0 0 0 0 1h5a.5.5 0 0 0 0-1zM5 9.5a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5m0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5\"/>\n  <path d=\"M9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V4.5zm0 1v2A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1z\"/>", "file-earmark-diff": "<path d=\"M8 5a.5.5 0 0 1 .5.5V7H10a.5.5 0 0 1 0 1H8.5v1.5a.5.5 0 0 1-1 0V8H6a.5.5 0 0 1 0-1h1.5V5.5A.5.5 0 0 1 8 5m-2.5 6.5A.5.5 0 0 1 6 11h4a.5.5 0 0 1 0 1H6a.5.5 0 0 1-.5-.5\"/>\n  <path d=\"M14 14V4.5L9.5 0H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2M9.5 3A1.5 1.5 0 0 0 11 4.5h2V14a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1h5.5z\"/>", "plug": "<path d=\"M6 0a.5.5 0 0 1 .5.5V3h3V.5a.5.5 0 0 1 1 0V3h1a.5.5 0 0 1 .5.5v3A3.5 3.5 0 0 1 8.5 10c-.002.434-.01.845-.04 1.22-.041.514-.126 1.003-.317 1.424a2.08 2.08 0 0 1-.97 1.028C6.725 13.9 6.169 14 5.5 14c-.998 0-1.61.33-1.974.718A1.92 1.92 0 0 0 3 16H2c0-.616.232-1.367.797-1.968C3.374 13.42 4.261 13 5.5 13c.581 0 .962-.088 1.218-.219.241-.123.4-.3.514-.55.121-.266.193-.621.23-1.09.027-.34.035-.718.037-1.141A3.5 3.5 0 0 1 4 6.5v-3a.5.5 0 0 1 .5-.5h1V.5A.5.5 0 0 1 6 0M5 4v2.5A2.5 2.5 0 0 0 7.5 9h1A2.5 2.5 0 0 0 11 6.5V4z\"/>", "clipboard2": "<path d=\"M3.5 2a.5.5 0 0 0-.5.5v12a.5.5 0 0 0 .5.5h9a.5.5 0 0 0 .5-.5v-12a.5.5 0 0 0-.5-.5H12a.5.5 0 0 1 0-1h.5A1.5 1.5 0 0 1 14 2.5v12a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 2 14.5v-12A1.5 1.5 0 0 1 3.5 1H4a.5.5 0 0 1 0 1z\"/>\n  <path d=\"M10 .5a.5.5 0 0 0-.5-.5h-3a.5.5 0 0 0-.5.5.5.5 0 0 1-.5.5.5.5 0 0 0-.5.5V2a.5.5 0 0 0 .5.5h5A.5.5 0 0 0 11 2v-.5a.5.5 0 0 0-.5-.5.5.5 0 0 1-.5-.5\"/>", "wrench": "<path d=\"M.102 2.223A3.004 3.004 0 0 0 3.78 5.897l6.341 6.252A3.003 3.003 0 0 0 13 16a3 3 0 1 0-.851-5.878L5.897 3.781A3.004 3.004 0 0 0 2.223.1l2.141 2.142L4 4l-1.757.364zm13.37 9.019.528.026.287.445.445.287.026.529L15 13l-.242.471-.026.529-.445.287-.287.445-.529.026L13 15l-.471-.242-.529-.026-.287-.445-.445-.287-.026-.529L11 13l.242-.471.026-.529.445-.287.287-.445.529-.026L13 11z\"/>", "bell": "<path d=\"M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2M8 1.918l-.797.161A4 4 0 0 0 4 6c0 .628-.134 2.197-.459 3.742-.16.767-.376 1.566-.663 2.258h10.244c-.287-.692-.502-1.49-.663-2.258C12.134 8.197 12 6.628 12 6a4 4 0 0 0-3.203-3.92zM14.22 12c.223.447.481.801.78 1H1c.299-.199.557-.553.78-1C2.68 10.2 3 6.88 3 6c0-2.42 1.72-4.44 4.005-4.901a1 1 0 1 1 1.99 0A5 5 0 0 1 13 6c0 .88.32 4.2 1.22 6\"/>", "lightning-charge": "<path d=\"M11.251.068a.5.5 0 0 1 .227.58L9.677 6.5H13a.5.5 0 0 1 .364.843l-8 8.5a.5.5 0 0 1-.842-.49L6.323 9.5H3a.5.5 0 0 1-.364-.843l8-8.5a.5.5 0 0 1 .615-.09zM4.157 8.5H7a.5.5 0 0 1 .478.647L6.11 13.59l5.732-6.09H9a.5.5 0 0 1-.478-.647L9.89 2.41z\"/>"};
+const RAIL = {"dashboard": "<path d=\"M12 2C6.489 2 2 6.489 2 12C2 17.511 6.489 22 12 22C17.511 22 22 17.511 22 12C22 6.489 17.511 2 12 2ZM12 4C16.4301 4 20 7.56988 20 12C20 16.4301 16.4301 20 12 20C7.56988 20 4 16.4301 4 12C4 7.56988 7.56988 4 12 4ZM12 5C11.7348 5 11.4804 5.10536 11.2929 5.29289C11.1054 5.48043 11 5.73478 11 6C11 6.26522 11.1054 6.51957 11.2929 6.70711C11.4804 6.89464 11.7348 7 12 7C12.2652 7 12.5196 6.89464 12.7071 6.70711C12.8946 6.51957 13 6.26522 13 6C13 5.73478 12.8946 5.48043 12.7071 5.29289C12.5196 5.10536 12.2652 5 12 5ZM15.7617 6.82422L12.082 10.5039C12.0547 10.5019 12.0274 10.5006 12 10.5C11.6022 10.5 11.2206 10.658 10.9393 10.9393C10.658 11.2206 10.5 11.6022 10.5 12C10.5 12.3978 10.658 12.7794 10.9393 13.0607C11.2206 13.342 11.6022 13.5 12 13.5C12.3978 13.5 12.7794 13.342 13.0607 13.0607C13.342 12.7794 13.5 12.3978 13.5 12C13.4994 11.9726 13.4981 11.9453 13.4961 11.918L17.1758 8.23828L15.7617 6.82422ZM8.12305 7.00781C7.73633 6.95991 7.34177 7.1415 7.13477 7.5C6.85877 7.978 7.022 8.58923 7.5 8.86523C7.978 9.14123 8.58923 8.978 8.86523 8.5C9.14123 8.022 8.978 7.41077 8.5 7.13477C8.3805 7.06577 8.25195 7.02378 8.12305 7.00781ZM6 11C5.73478 11 5.48043 11.1054 5.29289 11.2929C5.10536 11.4804 5 11.7348 5 12C5 12.2652 5.10536 12.5196 5.29289 12.7071C5.48043 12.8946 5.73478 13 6 13C6.26522 13 6.51957 12.8946 6.70711 12.7071C6.89464 12.5196 7 12.2652 7 12C7 11.7348 6.89464 11.4804 6.70711 11.2929C6.51957 11.1054 6.26522 11 6 11ZM18 11C17.7348 11 17.4804 11.1054 17.2929 11.2929C17.1054 11.4804 17 11.7348 17 12C17 12.2652 17.1054 12.5196 17.2929 12.7071C17.4804 12.8946 17.7348 13 18 13C18.2652 13 18.5196 12.8946 18.7071 12.7071C18.8946 12.5196 19 12.2652 19 12C19 11.7348 18.8946 11.4804 18.7071 11.2929C18.5196 11.1054 18.2652 11 18 11ZM8.12305 15.0078C7.73633 14.9599 7.34177 15.1415 7.13477 15.5C6.85877 15.978 7.022 16.5892 7.5 16.8652C7.978 17.1412 8.58923 16.978 8.86523 16.5C9.14123 16.022 8.978 15.4108 8.5 15.1348C8.3805 15.0658 8.25195 15.0238 8.12305 15.0078ZM16.123 15.0078C15.7363 14.9599 15.3418 15.1415 15.1348 15.5C14.8588 15.978 15.022 16.5892 15.5 16.8652C15.978 17.1412 16.5892 16.978 16.8652 16.5C17.1412 16.022 16.978 15.4108 16.5 15.1348C16.3805 15.0658 16.252 15.0238 16.123 15.0078Z\"/>", "constituents": "<path d=\"M22.5 21C22.5 21 24 21 24 19.5C24 18 22.5 13.5 16.5 13.5C10.5 13.5 9 18 9 19.5C9 21 10.5 21 10.5 21H22.5ZM10.5335 19.5C10.5283 19.4994 10.521 19.4984 10.5122 19.497C10.5081 19.4963 10.504 19.4955 10.5 19.4948C10.5022 19.0987 10.7503 17.9504 11.6389 16.9137C12.47 15.944 13.924 15 16.5 15C19.076 15 20.53 15.944 21.3611 16.9137C22.2497 17.9504 22.4978 19.0987 22.5 19.4948C22.496 19.4955 22.4919 19.4963 22.4878 19.497C22.479 19.4984 22.4717 19.4994 22.4665 19.5H10.5335Z\"/><path d=\"M16.5 10.5C18.1569 10.5 19.5 9.15685 19.5 7.5C19.5 5.84315 18.1569 4.5 16.5 4.5C14.8431 4.5 13.5 5.84315 13.5 7.5C13.5 9.15685 14.8431 10.5 16.5 10.5ZM21 7.5C21 9.98528 18.9853 12 16.5 12C14.0147 12 12 9.98528 12 7.5C12 5.01472 14.0147 3 16.5 3C18.9853 3 21 5.01472 21 7.5Z\"/><path d=\"M10.4039 13.9199C9.8522 13.7435 9.23931 13.6152 8.55942 13.5496C8.22293 13.5171 7.87002 13.5 7.5 13.5C1.5 13.5 0 18 0 19.5C0 20.5 0.5 21 1.5 21H7.82454C7.61334 20.5739 7.5 20.0687 7.5 19.5C7.5 17.9846 8.06587 16.437 9.13473 15.1443C9.49991 14.7026 9.9238 14.2907 10.4039 13.9199ZM7.38006 15.0007C6.48383 16.3704 6 17.932 6 19.5H1.5C1.5 19.1089 1.74637 17.955 2.63889 16.9137C3.45703 15.9592 4.87874 15.0295 7.38006 15.0007Z\"/><path d=\"M2.25 8.25C2.25 5.76472 4.26472 3.75 6.75 3.75C9.23528 3.75 11.25 5.76472 11.25 8.25C11.25 10.7353 9.23528 12.75 6.75 12.75C4.26472 12.75 2.25 10.7353 2.25 8.25ZM6.75 5.25C5.09315 5.25 3.75 6.59315 3.75 8.25C3.75 9.90685 5.09315 11.25 6.75 11.25C8.40685 11.25 9.75 9.90685 9.75 8.25C9.75 6.59315 8.40685 5.25 6.75 5.25Z\"/>", "actions": "<path d=\"M4.29905 22.2761C4.18235 22.9413 4.8387 23.462 5.41836 23.1641L12.0022 19.7802L18.586 23.1641C19.1657 23.462 19.822 22.9413 19.7053 22.2761L18.4608 15.1819L23.7443 10.1469C24.238 9.67639 23.9824 8.81605 23.3209 8.72208L15.9732 7.67827L12.697 1.18846C12.4019 0.603848 11.6025 0.603848 11.3073 1.18846L8.03117 7.67827L0.683455 8.72208C0.0219713 8.81605 -0.233629 9.67639 0.260142 10.1469L5.54364 15.1819L4.29905 22.2761ZM11.656 18.1239L6.12733 20.9655L7.16871 15.0296C7.2178 14.7497 7.12549 14.4632 6.92459 14.2718L2.56433 10.1166L8.64279 9.2531C8.89407 9.21741 9.11347 9.05692 9.232 8.82211L12.0022 3.33461L14.7724 8.82211C14.8909 9.05692 15.1103 9.21741 15.3616 9.2531L21.4401 10.1166L17.0798 14.2718C16.8789 14.4632 16.7866 14.7497 16.8357 15.0296L17.8771 20.9655L12.3484 18.1239C12.13 18.0117 11.8743 18.0117 11.656 18.1239Z\"/>", "tags": "<path d=\"M4.5 3L4.5 9.87868L15 20.3787L21.8787 13.5L11.3787 3L4.5 3ZM3 3C3 2.17157 3.67157 1.5 4.5 1.5H11.3787C11.7765 1.5 12.158 1.65804 12.4393 1.93934L22.9393 12.4393C23.5251 13.0251 23.5251 13.9749 22.9393 14.5607L16.0607 21.4393C15.4749 22.0251 14.5251 22.0251 13.9393 21.4393L3.43934 10.9393C3.15803 10.658 3 10.2765 3 9.87868V3Z\"/><path d=\"M8.25 7.5C7.83579 7.5 7.5 7.16421 7.5 6.75C7.5 6.33579 7.83579 6 8.25 6C8.66421 6 9 6.33579 9 6.75C9 7.16421 8.66421 7.5 8.25 7.5ZM8.25 9C9.49264 9 10.5 7.99264 10.5 6.75C10.5 5.50736 9.49264 4.5 8.25 4.5C7.00736 4.5 6 5.50736 6 6.75C6 7.99264 7.00736 9 8.25 9Z\"/><path d=\"M1.5 10.6287C1.5 11.0265 1.65803 11.408 1.93934 11.6893L13.125 22.875L13.0607 22.9393C12.4749 23.5251 11.5251 23.5251 10.9393 22.9393L0.439339 12.4393C0.158034 12.158 0 11.7765 0 11.3787V4.5C0 3.67157 0.671573 3 1.5 3V10.6287Z\"/>", "campaigns": "<path d=\"M4.5 3.75C4.5 1.67893 6.17893 0 8.25 0C10.3211 0 12 1.67893 12 3.75C12 1.67893 13.6789 0 15.75 0C17.8211 0 19.5 1.67893 19.5 3.75L19.5 3.75835C19.5001 3.86314 19.5002 4.1635 19.4433 4.5H22.5C23.3284 4.5 24 5.17157 24 6V9C24 9.82843 23.3284 10.5 22.5 10.5V21.75C22.5 22.9926 21.4926 24 20.25 24H3.75C2.50736 24 1.5 22.9926 1.5 21.75L1.5 10.5C0.671574 10.5 0 9.82843 0 9V6C0 5.17157 0.671573 4.5 1.5 4.5H4.55674C4.4998 4.1635 4.49995 3.86314 4.5 3.75835C4.5 3.75541 4.5 3.75263 4.5 3.75ZM6.10199 4.5H10.5V3.75C10.5 2.50736 9.49264 1.5 8.25 1.5C7.00736 1.5 6 2.50736 6 3.75C6 3.87713 6.00292 4.16026 6.06732 4.39641C6.07878 4.43842 6.09066 4.4728 6.10199 4.5ZM13.5 4.5H17.898C17.9093 4.4728 17.9212 4.43842 17.9327 4.39641C17.9971 4.16026 18 3.87713 18 3.75C18 2.50736 16.9926 1.5 15.75 1.5C14.5074 1.5 13.5 2.50736 13.5 3.75V4.5ZM1.5 6V9H10.5V6H1.5ZM13.5 6V9H22.5V6H13.5ZM21 10.5H13.5V22.5H20.25C20.6642 22.5 21 22.1642 21 21.75V10.5ZM10.5 22.5V10.5H3V21.75C3 22.1642 3.33579 22.5 3.75 22.5H10.5Z\"/>", "pipelines": "<path d=\"M12 22.5C6.20101 22.5 1.5 17.799 1.5 12C1.5 6.20101 6.20101 1.5 12 1.5C17.799 1.5 22.5 6.20101 22.5 12C22.5 17.799 17.799 22.5 12 22.5ZM12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24Z\"/><path d=\"M12 19.5C7.85786 19.5 4.5 16.1421 4.5 12C4.5 7.85786 7.85786 4.5 12 4.5C16.1421 4.5 19.5 7.85786 19.5 12C19.5 16.1421 16.1421 19.5 12 19.5ZM12 21C16.9706 21 21 16.9706 21 12C21 7.02944 16.9706 3 12 3C7.02944 3 3 7.02944 3 12C3 16.9706 7.02944 21 12 21Z\"/><path d=\"M12 16.5C9.51472 16.5 7.5 14.4853 7.5 12C7.5 9.51472 9.51472 7.5 12 7.5C14.4853 7.5 16.5 9.51472 16.5 12C16.5 14.4853 14.4853 16.5 12 16.5ZM12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z\"/><path d=\"M14.25 12C14.25 13.2426 13.2427 14.25 12 14.25C10.7574 14.25 9.75003 13.2426 9.75003 12C9.75003 10.7574 10.7574 9.75 12 9.75C13.2427 9.75 14.25 10.7574 14.25 12Z\"/>", "stewardship": "<path d=\"M12 4.12208L10.9249 3.017C8.39835 0.4201 3.77122 1.31654 2.10054 4.57926C1.3148 6.11374 1.13813 8.3287 2.57144 11.1564C3.95186 13.8797 6.82151 17.1397 12 20.6919C17.1785 17.1397 20.0481 13.8797 21.4286 11.1564C22.8619 8.3287 22.6852 6.11374 21.8995 4.57926C20.2288 1.31654 15.6016 0.4201 13.0751 3.017L12 4.12208ZM12 22.5C-10.9997 7.30262 4.91814 -4.5613 11.7365 1.71462C11.8259 1.79695 11.9138 1.8824 12 1.97101C12.0862 1.88241 12.1741 1.79696 12.2635 1.71464C19.0818 -4.56132 34.9997 7.30261 12 22.5Z\"/>", "insights": "<path d=\"M3 9C3 4.02944 7.02944 0 12 0C16.9706 0 21 4.02944 21 9C21 11.5369 19.9494 13.8297 18.2615 15.4648C17.9571 15.7597 17.7228 16.066 17.5819 16.3931L16.4388 19.0467C16.3203 19.3218 16.0495 19.5 15.75 19.5C16.1642 19.5 16.5 19.8358 16.5 20.25C16.5 20.6642 16.1642 21 15.75 21C16.1642 21 16.5 21.3358 16.5 21.75C16.5 22.1642 16.1642 22.5 15.75 22.5L15.4146 23.1708C15.1605 23.679 14.6411 24 14.0729 24H9.92705C9.35889 24 8.8395 23.679 8.58541 23.1708L8.25 22.5C7.83579 22.5 7.5 22.1642 7.5 21.75C7.5 21.3358 7.83579 21 8.25 21C7.83579 21 7.5 20.6642 7.5 20.25C7.5 19.8358 7.83579 19.5 8.25 19.5C7.95048 19.5 7.67969 19.3218 7.56119 19.0467L6.41809 16.3931C6.27721 16.066 6.04287 15.7597 5.73845 15.4648C4.05059 13.8297 3 11.5369 3 9ZM12 1.5C7.85786 1.5 4.5 4.85786 4.5 9C4.5 11.1143 5.37388 13.0232 6.78214 14.3874C7.176 14.7689 7.55196 15.2338 7.79571 15.7996L8.74355 18H15.2564L16.2043 15.7996C16.448 15.2338 16.824 14.7689 17.2179 14.3874C18.6261 13.0232 19.5 11.1143 19.5 9C19.5 4.85786 16.1421 1.5 12 1.5Z\"/>", "settings": "<path d=\"M12.0001 7.13132C9.31117 7.13132 7.13141 9.31108 7.13141 12C7.13141 14.6888 9.31117 16.8686 12.0001 16.8686C14.6889 16.8686 16.8687 14.6888 16.8687 12C16.8687 9.31108 14.6889 7.13132 12.0001 7.13132ZM8.63141 12C8.63141 10.1395 10.1396 8.63132 12.0001 8.63132C13.8605 8.63132 15.3687 10.1395 15.3687 12C15.3687 13.8604 13.8605 15.3686 12.0001 15.3686C10.1396 15.3686 8.63141 13.8604 8.63141 12Z\"/><path d=\"M14.6947 2.01506C13.9028 -0.671689 10.0972 -0.671687 9.30529 2.01506L9.16451 2.49269C8.92869 3.29279 8.01482 3.67133 7.2823 3.27232L6.84503 3.03414C4.38524 1.69429 1.69429 4.38525 3.03414 6.84503L3.27233 7.28231C3.67133 8.01482 3.29279 8.92869 2.49269 9.16451L2.01506 9.30529C-0.671689 10.0972 -0.671687 13.9028 2.01506 14.6947L2.49269 14.8355C3.29279 15.0713 3.67133 15.9852 3.27232 16.7177L3.03414 17.155C1.69429 19.6147 4.38524 22.3057 6.84503 20.9659L7.28231 20.7277C8.01482 20.3287 8.92869 20.7072 9.16451 21.5073L9.30529 21.9849C10.0972 24.6717 13.9028 24.6717 14.6947 21.9849L14.8355 21.5073C15.0713 20.7072 15.9852 20.3287 16.7177 20.7277L17.155 20.9659C19.6148 22.3057 22.3057 19.6148 20.9659 17.155L20.7277 16.7177C20.3287 15.9852 20.7072 15.0713 21.5073 14.8355L21.9849 14.6947C24.6717 13.9028 24.6717 10.0972 21.9849 9.30529L21.5073 9.16451C20.7072 8.92869 20.3287 8.01482 20.7277 7.2823L20.9659 6.84503C22.3057 4.38524 19.6147 1.69429 17.155 3.03414L16.7177 3.27233C15.9852 3.67133 15.0713 3.29279 14.8355 2.49269L14.6947 2.01506ZM10.7441 2.43915C11.1132 1.18695 12.8868 1.18695 13.2559 2.43915L13.3967 2.91677C13.9027 4.63349 15.8635 5.44569 17.4352 4.58958L17.8725 4.3514C19.0189 3.72694 20.2731 4.9811 19.6486 6.12752L19.4104 6.56479C18.5543 8.13649 19.3665 10.0973 21.0832 10.6033L21.5609 10.7441C22.813 11.1132 22.813 12.8868 21.5609 13.2559L21.0832 13.3967C19.3665 13.9027 18.5543 15.8635 19.4104 17.4352L19.6486 17.8725C20.2731 19.0189 19.0189 20.2731 17.8725 19.6486L17.4352 19.4104C15.8635 18.5543 13.9027 19.3665 13.3967 21.0832L13.2559 21.5609C12.8868 22.813 11.1132 22.813 10.7441 21.5609L10.6033 21.0832C10.0973 19.3665 8.13649 18.5543 6.56479 19.4104L6.12752 19.6486C4.9811 20.2731 3.72694 19.0189 4.3514 17.8725L4.58958 17.4352C5.44569 15.8635 4.63349 13.9027 2.91677 13.3967L2.43915 13.2559C1.18695 12.8868 1.18695 11.1132 2.43915 10.7441L2.91677 10.6033C4.63349 10.0973 5.44569 8.13649 4.58959 6.56479L4.3514 6.12752C3.72695 4.9811 4.9811 3.72695 6.12752 4.3514L6.56479 4.58958C8.13649 5.44569 10.0973 4.63349 10.6033 2.91677L10.7441 2.43915Z\"/>"};
+const railIcon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${RAIL[n]}</svg>`;
+const icon = (n, cls='i') => `<svg class="${cls}" viewBox="0 0 16 16" aria-hidden="true">${ICONS[n]||''}</svg>`;
+
+const ROLES = {
+  admin:  {label:'Admin', name:'Tarah Smith', initials:'TS'},
+  member: {label:'Member', name:'Jordan Lee', initials:'JL'},
+  eop:    {label:'Entry Only Plus', name:'Sam Rivera', initials:'SR'},
+  eo:     {label:'Entry Only', name:'Alex Kim', initials:'AK'},
+  alpine: {label:'Alpine Admin (CX)', name:'Alpine Admin', initials:'AA'},
+};
+const ORG = 'Riverside Community Fund';
+const state = { role:'admin', paid:true, fIns:true, fStew:true, page:'constituents', sTab:null };
+const has = (...r) => r.includes(state.role);
+
+const NAV = [
+  {id:'dashboard', label:'Dashboard', icon:'speedometer2', group:'core', ok:()=>has('admin','member','eop','alpine')},
+  {id:'constituents', label:'Constituents', icon:'people', group:'core', ok:()=>has('admin','member','eop','alpine')},
+  {id:'actions', label:'Actions', icon:'star', group:'core', ok:()=>true},
+  {id:'tags', label:'Tags', icon:'tags', group:'core', ok:()=>has('admin','member','alpine')},
+  {id:'campaigns', label:'Campaigns', icon:'gift', group:'core', ok:()=>has('admin','member','alpine')},
+  {id:'pipelines', label:'Pipelines', icon:'bullseye', group:'paid', badge:4, ok:()=>state.paid && has('admin','member','alpine')},
+  {id:'stewardship', label:'Stewardship', icon:'heart', group:'paid', ok:()=>state.paid && state.fStew && has('admin','alpine')},
+  {id:'insights', label:'Insights', icon:'lightbulb', group:'paid', ok:()=>state.paid && state.fIns && has('admin','member','alpine')},
+  {id:'htru', label:'HTRU tools', icon:'tools', group:'bottom', menu:true, ok:()=>has('alpine')},
+  {id:'settings', label:'Settings', icon:'gear', group:'bottom', ok:()=>has('admin','member','alpine')},
+];
+const HTRU_TOOLS = [
+  {id:'data-hygiene', t:'Data Hygiene'}, {id:'lead-scoring', t:'Lead Scoring'}, {id:'job-status', t:'Job Status'},
+  {id:'ai-prompt-editor', t:'AI Prompt Editor'}, {id:'developer-docs', t:'Developer Docs & Guides'}];
+const SETTINGS = [
+  {id:'staff', t:'Staff members', icon:'people', ok:()=>has('admin','member','alpine')},
+  {id:'fields', t:'All fields', icon:'file-earmark-text', ok:()=>has('admin','alpine')},
+  {id:'calculated', t:'Calculated fields', icon:'file-earmark-diff', ok:()=>has('admin','alpine')},
+  {id:'integrations', t:'Integrations', icon:'plug', ok:()=>has('admin','alpine')},
+  {id:'blueprints', t:'Blueprints', icon:'clipboard2', ok:()=>has('admin','member','alpine')},
+  {id:'notifications', t:'Notifications', icon:'bell', moved:'Moved here from the main nav', ok:()=>has('admin','alpine')},
+  {id:'automations', t:'Automations', icon:'lightning-charge', moved:'Smart Automations — moved here from the profile menu', ok:()=>has('admin','alpine')},
+  {id:'humanitru', t:'Humanitru settings', icon:'wrench', ok:()=>has('alpine')},
+];
+const CREATE = [
+  {id:'constituent', t:'Constituent', s:'Person or organization', icon:'person-add'},
+  {id:'manual', t:'Manual action', s:'Donation, call, meeting…', icon:'star'},
+  {id:'blueprint', t:'Blueprint action', s:'Start from a blueprint', icon:'clipboard', sepAfter:true},
+  {id:'batch', t:'Batch of actions', s:'Several actions at once', icon:'list-check'},
+  {id:'bulk', t:'Bulk upload', s:'Import a CSV file', icon:'upload'},
+];
+const canCreate = () => has('admin','eop','eo','alpine');
+
+const DIFF = {
+  admin:['Tools moved out of the profile menu: Bulk upload and Batch of actions → “+ New”, Smart Automations → Settings', 'Notifications moved into Settings', 'Evergreen and Transaction Portal → product switcher'],
+  member:['Notifications link removed — it shows today but errors (401) for Members', 'No “+ New” — Members can’t create records today either'],
+  eop:['No change to what’s visible', 'Open question: Tags and Campaigns open for this role but stay hidden (as today)'],
+  eo:['Rail has one item — kept for consistency', '“+ New” holds almost everything this role does'],
+  alpine:['Internal tools grouped under one “HTRU tools” rail item (was 2 rail items + 3 profile-menu items)', 'Humanitru settings stays in Settings'],
+};
+
+/* ---------- Rendering ---------- */
+const $ = id => document.getElementById(id);
+function railItem(n){
+  const cur = state.page===n.id || (n.id==='htru' && state.page.startsWith('tool:'));
+  const aria = n.badge ? `${n.label}, ${n.badge} tasks due soon` : n.label;
+  return `<button class="rail-item" data-nav="${n.id}" ${cur?'aria-current="page"':''} aria-label="${aria}"
+    ${n.menu?'aria-haspopup="menu" aria-expanded="false"':''} ${n.badge?`data-tip="${n.badge} tasks due soon"`:''}>
+    ${RAIL[n.id] ? railIcon(n.id) : icon(n.icon)}<span class="lbl" aria-hidden="true">${n.label}</span>
+    ${n.badge?`<span class="badge" aria-hidden="true">${n.badge}</span>`:''}</button>`;
+}
+function renderRail(){
+  const vis = NAV.filter(n=>n.ok());
+  $('g-core').innerHTML = vis.filter(n=>n.group==='core').map(railItem).join('');
+  const paid = vis.filter(n=>n.group==='paid');
+  $('g-paid').innerHTML = paid.map(railItem).join('');
+  $('d-paid').style.display = paid.length ? '' : 'none';
+  $('g-bottom').innerHTML = vis.filter(n=>n.group==='bottom').map(railItem).join('')
+    + `<div class="menu" id="m-htru" role="menu" aria-label="HTRU tools"><div class="mlabel">Humanitru staff only</div><div class="msep" role="separator"></div>${HTRU_TOOLS.map(t=>`<button class="mi" role="menuitem" data-tool="${t.id}"><span class="t">${t.t}</span></button>`).join('')}</div>`;
+}
+function renderTop(){
+  const r = ROLES[state.role];
+  $('w-new').innerHTML = canCreate() ? `
+    <button class="btn btn-primary" id="b-new" aria-haspopup="menu" aria-expanded="false" aria-controls="m-new">${icon('plus-lg')}New${icon('chevron-down')}</button>
+    <div class="menu" id="m-new" role="menu" aria-label="Create new">${CREATE.map(c=>`
+      <button class="mi" role="menuitem" data-create="${c.id}">${icon(c.icon)}<span><span class="t">${c.t}</span><span class="s">${c.s}</span></span></button>${c.sepAfter?'<div class="msep" role="separator"></div>':''}`).join('')}</div>` : '';
+  $('w-switch').innerHTML = `
+    <button class="btn btn-secondary" id="b-switch" aria-haspopup="menu" aria-expanded="false" aria-controls="m-switch">Alpine${icon('chevron-down')}</button>
+    <div class="menu" id="m-switch" role="menu" aria-label="Switch product">
+      <button class="mi" role="menuitemradio" aria-checked="true" data-product="alpine"><span><span class="t">Alpine</span><span class="s">You are here</span></span>${icon('check-lg','i check')}</button>
+      <div class="msep" role="separator"></div>
+      <button class="mi" role="menuitem" data-product="Evergreen">${icon('box-arrow-up-right')}<span><span class="t">Evergreen</span><span class="s">Opens in a new tab</span></span></button>
+      <button class="mi" role="menuitem" data-product="Transaction Portal">${icon('box-arrow-up-right')}<span><span class="t">Transaction Portal</span><span class="s">Opens in a new tab</span></span></button>
+    </div>`;
+  $('w-profile').innerHTML = `
+    <button class="avatar-btn" id="b-profile" aria-haspopup="menu" aria-expanded="false" aria-controls="m-profile" aria-label="Account: ${r.name}">${r.initials}</button>
+    <div class="menu" id="m-profile" role="menu" aria-label="Account">
+      <div class="mhead"><b>${r.name}</b><span>${ORG} · ${r.label}</span></div>
+      <div class="msep" role="separator"></div>
+      <button class="mi" role="menuitem" data-acct="profile">${icon('person')}<span class="t">Profile</span></button>
+      <div class="msep" role="separator"></div>
+      <button class="mi" role="menuitem" data-acct="signout">${icon('box-arrow-right')}<span class="t">Sign out</span></button>
+    </div>`;
+}
+const NAMES=[['Paul Smithe','paul.smithe@example.org','$12,450','Donation · Nov 17'],['Maria Gonzales','mgonzales@example.org','$3,200','Phone call · Nov 15'],['Devon Park','devon.park@example.org','$860','RSVP · Nov 12'],['Alicia Chen','achen@example.org','$25,000','Meeting · Nov 10'],['Sam Okafor','sam.o@example.org','$140','Donation · Nov 9'],['Rita Haddad','rita.h@example.org','$5,575','Letter · Nov 4'],['Jonah Weiss','jweiss@example.org','$1,020','Check in · Nov 2']];
+const placeholder = (title, text) => `<h1>${title}</h1><p class="sub">${text}</p><div class="card placeholder">${icon('info-circle')}<div>This page is unchanged by the nav project — placeholder content for the prototype.</div></div>`;
+const SHOTS = {dashboard:'dashboard', pipelines:'pipelines', stewardship:'stewardship', insights:'insights', constituents:'constituents', actions:'actions', tags:'tags', campaigns:'campaigns', 'tool:data-hygiene':'hygiene', 'tool:lead-scoring':'scoring'};
+const SETTING_SHOTS = {staff:'staff', fields:'fields', calculated:'calculated', integrations:'integrations', blueprints:'blueprints', notifications:'notifications', automations:'automations', humanitru:'humanitru'};
+const shot = (f, label) => `<img class="shot" src="pages/${f}.jpg" alt="${label} — current page design (screenshot)">`;
+function renderMain(){
+  const p = state.page, m = $('main');
+  m.classList.toggle('shot-page', !!SHOTS[p]); m.classList.remove('settings-page');
+  if (SHOTS[p]) { const n = NAV.find(x=>x.id===p) || HTRU_TOOLS.find(x=>'tool:'+x.id===p); m.innerHTML = shot(SHOTS[p], n.label||n.t); m.scrollTop = 0; return; }
+  if (p==='constituents') m.innerHTML = `<h1>Constituents</h1><p class="sub">1,284 constituents</p><div class="card"><table><thead><tr><th>Name</th><th>Email</th><th>Lifetime giving</th><th>Last action</th></tr></thead><tbody>${NAMES.map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+  else if (p==='dashboard') m.innerHTML = `<h1>Dashboard</h1><p class="sub">Your dashboard</p><div class="stats"><div class="card stat"><b>$938,581</b><span>Total donated this year</span></div><div class="card stat"><b>195</b><span>Donors</span></div><div class="card stat"><b>11</b><span>Overdue donations</span></div></div>${placeholder('','').replace('<h1></h1><p class="sub"></p>','')}`;
+  else if (p==='actions') m.innerHTML = `<h1>Actions</h1><p class="sub">9,758 actions</p><div class="card"><table><thead><tr><th>Constituent</th><th>Type</th><th>Amount</th><th>Date</th></tr></thead><tbody>${NAMES.map(r=>`<tr><td>${r[0]}</td><td>${r[3].split(' · ')[0]}</td><td>${r[2]}</td><td>${r[3].split(' · ')[1]}</td></tr>`).join('')}</tbody></table></div>`;
+  else if (p==='settings') renderSettings();
+  else if (p.startsWith('tool:')) { const t = HTRU_TOOLS.find(x=>'tool:'+x.id===p); m.innerHTML = placeholder(t.t, 'Internal tool — visible to Humanitru staff only.'); }
+  else { const n = NAV.find(x=>x.id===p); m.innerHTML = placeholder(n.label, ''); }
+}
+function renderSettings(){
+  const secs = SETTINGS.filter(s=>s.ok());
+  if (!secs.find(s=>s.id===state.sTab)) state.sTab = secs[0].id;
+  const cur = secs.find(s=>s.id===state.sTab);
+  $('main').classList.add('settings-page');
+  $('main').innerHTML = `<div class="settings"><nav class="snav2" aria-label="Settings sections">${secs.map(s=>`<button data-stab="${s.id}" ${s.id===state.sTab?'aria-current="page"':''}><span class="ic-row">${s.moved?'<span class="moved">Moved</span>':''}${icon(s.icon)}</span>${s.t}</button>`).join('')}</nav>
+    <section class="settings-body">${cur.moved?`<div class="note">${icon('info-circle')}<span>${cur.moved}. Same page and permissions as today.</span></div>`:''}
+    ${SETTING_SHOTS[cur.id] ? shot(SETTING_SHOTS[cur.id], cur.t) : `<div class="card placeholder">${icon('info-circle')}<div><b style="color:var(--text)">${cur.t}</b><br>Existing settings page — unchanged by the nav project.</div></div>`}</section></div>`;
+}
+function renderCtl(){
+  $('roles').innerHTML = Object.entries(ROLES).map(([k,v])=>`<label><input type="radio" name="role" value="${k}" ${k===state.role?'checked':''}> ${v.label}</label>`).join('');
+  $('diff').innerHTML = DIFF[state.role].map(d=>`<li>${d}</li>`).join('');
+  $('paid').checked = state.paid; $('f-ins').checked = state.fIns; $('f-stew').checked = state.fStew;
+}
+function allowed(p){
+  if (p==='settings') return NAV.find(n=>n.id==='settings').ok();
+  if (p.startsWith('tool:')) return has('alpine');
+  const n = NAV.find(x=>x.id===p); return !!(n && n.ok() && !n.menu);
+}
+function render(){
+  if (!allowed(state.page)) state.page = NAV.find(n=>n.ok() && !n.menu).id;
+  renderRail(); renderTop(); renderMain(); renderCtl();
+  const hh = toHash(state.page); if (location.hash.slice(1)!==hh) history.replaceState(null,'','#'+hh);
+}
+
+/* ---------- Menus ---------- */
+let openMenu = null, openBtn = null;
+function closeMenu(focusBtn){
+  if (!openMenu) return;
+  openMenu.classList.remove('open'); openBtn.setAttribute('aria-expanded','false');
+  if (focusBtn) openBtn.focus();
+  openMenu = openBtn = null;
+}
+function toggleMenu(btn, menu, focusFirst){
+  if (openMenu === menu) return closeMenu(true);
+  closeMenu();
+  menu.classList.add('open'); btn.setAttribute('aria-expanded','true');
+  openMenu = menu; openBtn = btn;
+  if (menu.id==='m-htru'){ const r = btn.getBoundingClientRect(); menu.classList.add('left'); menu.style.left = (r.right+8)+'px'; menu.style.bottom = (innerHeight - r.bottom)+'px'; }
+  if (focusFirst) menu.querySelector('.mi')?.focus();
+}
+const items = () => [...openMenu.querySelectorAll('.mi')];
+
+document.addEventListener('click', e=>{
+  const t = e.target.closest('button,[data-nav]');
+  if (!t){ closeMenu(); return; }
+  if (t.id==='b-new') return toggleMenu(t, $('m-new'), e.detail===0);
+  if (t.id==='b-switch') return toggleMenu(t, $('m-switch'), e.detail===0);
+  if (t.id==='b-profile') return toggleMenu(t, $('m-profile'), e.detail===0);
+  if (t.dataset.nav==='htru') return toggleMenu(t, $('m-htru'), e.detail===0);
+  if (t.dataset.nav){ closeMenu(); state.page = t.dataset.nav; render(); $('main').focus({preventScroll:true}); return; }
+  if (t.dataset.tool){ closeMenu(); state.page = 'tool:'+t.dataset.tool; render(); return; }
+  if (t.dataset.stab){ state.sTab = t.dataset.stab; renderSettings(); return; }
+  if (t.dataset.create){ const c = CREATE.find(x=>x.id===t.dataset.create); closeMenu(); return openModal(c); }
+  if (t.dataset.product){ closeMenu(); if (t.dataset.product!=='alpine') toast(`Opens ${t.dataset.product} in a new tab`); return; }
+  if (t.dataset.acct){ closeMenu(); return toast(t.dataset.acct==='profile' ? 'Opens your profile (unchanged)' : 'Signs you out'); }
+  if (t.id==='help'){ closeMenu(); return toast('Opens the Help Center in a new tab'); }
+  if (t.id==='m-close' || t.id==='m-x') return closeModal();
+  if (!t.closest('.menu')) closeMenu();
+});
+document.addEventListener('keydown', e=>{
+  if ((e.metaKey||e.ctrlKey) && e.key.toLowerCase()==='k'){ e.preventDefault(); closeMenu(); $('search').focus(); return; }
+  if (e.key==='Escape'){ if ($('scrim').classList.contains('open')) return closeModal(); if (openMenu) return closeMenu(true); }
+  if (openMenu && ['ArrowDown','ArrowUp','Home','End'].includes(e.key)){
+    e.preventDefault(); const it = items(); let i = it.indexOf(document.activeElement);
+    i = e.key==='ArrowDown' ? (i+1)%it.length : e.key==='ArrowUp' ? (i-1+it.length)%it.length : e.key==='Home' ? 0 : it.length-1;
+    it[i].focus();
+  }
+  if (!openMenu && e.key==='ArrowDown' && ['b-new','b-switch','b-profile'].includes(document.activeElement.id)){ e.preventDefault(); document.activeElement.click(); }
+  if (e.key==='Tab' && openMenu && !openMenu.contains(document.activeElement)) closeMenu();
+});
+$('search').addEventListener('keydown', e=>{ if (e.key==='Enter' && e.target.value.trim()) toast('Search results open here (unchanged)'); });
+
+/* ---------- Tooltip for badge ---------- */
+let tipEl = null;
+function showTip(el){ hideTip(); tipEl = document.createElement('div'); tipEl.className='tip'; tipEl.textContent = el.dataset.tip; document.body.appendChild(tipEl);
+  const r = el.getBoundingClientRect(); tipEl.style.left = (r.right+8)+'px'; tipEl.style.top = (r.top + r.height/2 - tipEl.offsetHeight/2)+'px'; }
+function hideTip(){ tipEl?.remove(); tipEl = null; }
+document.addEventListener('mouseover', e=>{ const el = e.target.closest('[data-tip]'); if (el) showTip(el); });
+document.addEventListener('mouseout', e=>{ if (e.target.closest('[data-tip]')) hideTip(); });
+document.addEventListener('focusin', e=>{ const el = e.target.closest('[data-tip]'); el ? showTip(el) : hideTip(); });
+
+/* ---------- Modal + toast ---------- */
+let lastFocus = null;
+function openModal(c){
+  lastFocus = document.activeElement;
+  $('m-title').textContent = c.t==='Constituent' ? 'Add Constituent' : c.t==='Manual action' ? 'Add Manual Action' : c.t==='Blueprint action' ? 'Add Blueprint Action' : c.t==='Batch of actions' ? 'Add Batch Actions' : 'Bulk Upload';
+  $('m-body').innerHTML = `In the real product this opens <b>today’s ${$('m-title').textContent} screen</b>, unchanged. The nav project only changes where you start it from.`;
+  $('scrim').classList.add('open'); $('m-close').focus();
+}
+function closeModal(){ $('scrim').classList.remove('open'); lastFocus?.focus(); }
+$('scrim').addEventListener('click', e=>{ if (e.target.id==='scrim') closeModal(); });
+let tt; function toast(msg){ const el=$('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(tt); tt=setTimeout(()=>el.classList.remove('show'),2200); }
+
+/* ---------- Controls ---------- */
+$('ctl').addEventListener('change', e=>{
+  if (e.target.name==='role') state.role = e.target.value;
+  if (e.target.id==='paid') state.paid = e.target.checked;
+  if (e.target.id==='f-ins') state.fIns = e.target.checked;
+  if (e.target.id==='f-stew') state.fStew = e.target.checked;
+  closeMenu(); render();
+});
+function toggleCtl(){ const c=$('ctl'); c.classList.toggle('collapsed'); $('ctl-h').setAttribute('aria-expanded', String(!c.classList.contains('collapsed'))); }
+$('ctl-h').addEventListener('click', toggleCtl);
+$('ctl-h').addEventListener('keydown', e=>{ if (e.key==='Enter'||e.key===' '){ e.preventDefault(); toggleCtl(); } });
+
+/* ---------- Init ---------- */
+$('ic-search').innerHTML = icon('search'); $('help').innerHTML = icon('question-circle');
+$('m-x').innerHTML = icon('x-lg'); $('ic-sl').innerHTML = icon('sliders'); $('ic-chev').innerHTML = icon('chevron-down');
+if (!/Mac|iPhone|iPad/.test(navigator.platform)) $('kbd').textContent = 'Ctrl K';
+function toHash(p){ return p==='settings' ? 'org-settings' : p.replace('tool:','tool-'); }
+function fromHash(){ const h = location.hash.slice(1); if (!h) return; state.page = h==='org-settings' ? 'settings' : h.startsWith('tool-') ? 'tool:'+h.slice(5) : h; }
+fromHash(); render();
+addEventListener('hashchange', ()=>{ fromHash(); render(); });
+</script>
+</body>
+</html>
